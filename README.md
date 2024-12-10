@@ -6,46 +6,70 @@ The Sklik GTM server-side template facilitates the sending of conversion and ret
 
 **Key Functions**
 
-**logToConsole:** Logs messages to the server-side console for debugging purposes.
+logToConsole: Logs messages to the server-side console for debugging purposes.
 
-**getRequestHeader:** Fetches HTTP request headers.
-**getEventData:** Retrieves data from incoming events.
+getRequestHeader: Fetches HTTP request headers.
+
+getEventData: Retrieves data from incoming events.
+
 sendPixelFromBrowser: Sends a pixel request back to the browser to preserve third-party cookies and the client’s IP address.
 
 **Template Inputs**
 
 **Conversion Inputs**
+
 conversionId (Required): ID of the conversion event.
+
 conversionValue (Optional): Value associated with the conversion.
+
 conversionOrderId (Optional): Unique order ID for the conversion.
+
 conversionZboziId (Optional): ID for Zbozi.cz (disabled in current implementation).
+
 conversionZboziType (Optional): Type for Zbozi.cz (disabled in current implementation).
+
 **Retargeting Inputs**
+
 retargetingId (Required): ID for the retargeting event.
+
 retargetingItemId (Optional): Item ID for the retargeting event.
+
 retargetingPageType (Optional): Type of page for the retargeting event.
+
 retargetingCategory (Optional): Category for the retargeting event.
+
 retargetingUrl (Optional): URL for the retargeting event.
-Common Inputs
+
+**Common Inputs**
+
 tagType (Required): Specifies whether the tag is for conversion or retargeting.
+
 tagConsent (Required): Defines consent logic. Accepted values:
+
 inherit: Consent is determined by the x-ga-gcs event data.
+
 granted: Consent is explicitly granted.
+
 denied: Consent is explicitly denied.
-Logic Flow
-Initialization:
+
+**Logic Flow**
+
+1) Initialization:
 Logs the start of the template execution and captures essential event data, including:
 
-pageReferrer: Referring page URL.
-consentState: Consent signal from the event data (x-ga-gcs).
-Tag Type Handling:
+**pageReferrer:** Referring page URL.
+
+**consentState:** Consent signal from the event data (x-ga-gcs).
+
+2) Tag Type Handling:
 Depending on tagType, the script processes either a conversion or retargeting event:
 
 Conversion: Constructs the base URL (https://c.seznam.cz/conv?id=...) and appends optional query parameters (value, orderId, etc.).
+
 Retargeting: Constructs the base URL (https://c.seznam.cz/retargeting?id=...) and appends optional query parameters (itemId, pageType, etc.).
 Consent Logic:
 
-Evaluates the consent state based on tagConsent:
+3) Evaluates the consent state based on tagConsent:
 inherit: Uses the third character of x-ga-gcs to determine consent (1 = granted, 0 = denied, -1 = unknown).
 granted or denied: Sets explicit consent values.
 Appends the consent flag (consent) to the destination URL.
