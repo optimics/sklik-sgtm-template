@@ -1,0 +1,5 @@
+homepage: "https://www.optimics.com/"
+documentation: "https://github.com/optimics/sklik-sgtm-template/blob/main/README.md"
+versions:
+  - sha: 9b62d56dd43b2697e8a78a4cfdc9c2b1f1d1d557
+    changeNotes: Initial release.
