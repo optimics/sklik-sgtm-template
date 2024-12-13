@@ -1,99 +1,117 @@
-This document provides a comprehensive overview of the Sklik server-side Google Tag Manager (GTM) template, its configuration options, logic flow, and how it processes conversion and retargeting events.
+# Sklik Server-Side Google Tag Manager Template
 
-**Overview**
+This document provides a comprehensive overview of the Sklik server-side Google Tag Manager (GTM) template, including its configuration options, logic flow, and how it processes conversion and retargeting events.
+
+---
+
+## Overview
 
 The Sklik GTM server-side template facilitates the sending of conversion and retargeting events to Sklik (Seznam.cz's advertising platform). It uses server-side tagging to enhance data privacy, ensure reliable event tracking, and maintain compatibility with browser restrictions.
 
-**Key Functions**
+---
 
-logToConsole: Logs messages to the server-side console for debugging purposes.
+## Key Functions
 
-getRequestHeader: Fetches HTTP request headers.
+- **`logToConsole`**: Logs messages to the server-side console for debugging purposes.
+- **`getRequestHeader`**: Fetches HTTP request headers.
+- **`getEventData`**: Retrieves data from incoming events.
+- **`sendPixelFromBrowser`**: Sends a pixel request back to the browser to preserve third-party cookies and the client’s IP address.
 
-getEventData: Retrieves data from incoming events.
+---
 
-sendPixelFromBrowser: Sends a pixel request back to the browser to preserve third-party cookies and the client’s IP address.
+## Template Inputs
 
-**Template Inputs**
+### Conversion Inputs
 
-**Conversion Inputs**
+- **`conversionId` (Required)**: ID of the conversion event.
+- **`conversionValue` (Optional)**: Value associated with the conversion.
+- **`conversionOrderId` (Optional)**: Unique order ID for the conversion.
+- **`conversionZboziId` (Optional)**: ID for Zbozi.cz (disabled in current implementation).
+- **`conversionZboziType` (Optional)**: Type for Zbozi.cz (disabled in current implementation).
 
-conversionId (Required): ID of the conversion event.
+### Retargeting Inputs
 
-conversionValue (Optional): Value associated with the conversion.
+- **`retargetingId` (Required)**: ID for the retargeting event.
+- **`retargetingItemId` (Optional)**: Item ID for the retargeting event.
+- **`retargetingPageType` (Optional)**: Type of page for the retargeting event.
+- **`retargetingCategory` (Optional)**: Category for the retargeting event.
+- **`retargetingUrl` (Optional)**: URL for the retargeting event.
 
-conversionOrderId (Optional): Unique order ID for the conversion.
+### Common Inputs
 
-conversionZboziId (Optional): ID for Zbozi.cz (disabled in current implementation).
+- **`tagType` (Required)**: Specifies whether the tag is for conversion or retargeting.
+- **`tagConsent` (Required)**: Defines consent logic. Accepted values:
+  - `inherit`: Consent is determined by the `x-ga-gcs` event data.
+  - `granted`: Consent is explicitly granted.
+  - `denied`: Consent is explicitly denied.
 
-conversionZboziType (Optional): Type for Zbozi.cz (disabled in current implementation).
+---
 
-**Retargeting Inputs**
+## Logic Flow
 
-retargetingId (Required): ID for the retargeting event.
+### 1. Initialization
 
-retargetingItemId (Optional): Item ID for the retargeting event.
+- Logs the start of the template execution.
+- Captures essential event data, including:
+  - **`pageReferrer`**: Referring page URL.
+  - **`consentState`**: Consent signal from the event data (`x-ga-gcs`).
 
-retargetingPageType (Optional): Type of page for the retargeting event.
+### 2. Tag Type Handling
 
-retargetingCategory (Optional): Category for the retargeting event.
+Depending on `tagType`, the script processes either a **conversion** or **retargeting** event:
 
-retargetingUrl (Optional): URL for the retargeting event.
+#### Conversion
 
-**Common Inputs**
+- Constructs the base URL: `https://c.seznam.cz/conv?id=...`
+- Appends optional query parameters (e.g., `value`, `orderId`, etc.).
 
-tagType (Required): Specifies whether the tag is for conversion or retargeting.
+#### Retargeting
 
-tagConsent (Required): Defines consent logic. Accepted values:
+- Constructs the base URL: `https://c.seznam.cz/retargeting?id=...`
+- Appends optional query parameters (e.g., `itemId`, `pageType`, etc.).
 
-inherit: Consent is determined by the x-ga-gcs event data.
+### 3. Consent Evaluation
 
-granted: Consent is explicitly granted.
+- Evaluates the consent state based on `tagConsent`:
+  - **`inherit`**: Uses the third character of `x-ga-gcs` to determine consent (`1 = granted`, `0 = denied`, `-1 = unknown`).
+  - **`granted`** or **`denied`**: Sets explicit consent values.
+- Appends the consent flag (`consent`) to the destination URL.
 
-denied: Consent is explicitly denied.
+### 4. Send Pixel
 
-**Logic Flow**
+- Logs the final destination URL.
+- Sends a pixel request to the Seznam.cz server using `sendPixelFromBrowser`.
 
-1) Initialization:
-Logs the start of the template execution and captures essential event data, including:
+### 5. Completion
 
-**pageReferrer:** Referring page URL.
+- Calls `data.gtmOnSuccess` to signal successful tag execution.
 
-**consentState:** Consent signal from the event data (x-ga-gcs).
+---
 
-2) Tag Type Handling:
-Depending on tagType, the script processes either a conversion or retargeting event:
+## Destination URL Construction
 
-Conversion: Constructs the base URL (https://c.seznam.cz/conv?id=...) and appends optional query parameters (value, orderId, etc.).
-
-Retargeting: Constructs the base URL (https://c.seznam.cz/retargeting?id=...) and appends optional query parameters (itemId, pageType, etc.).
-Consent Logic:
-
-3) Evaluates the consent state based on tagConsent:
-inherit: Uses the third character of x-ga-gcs to determine consent (1 = granted, 0 = denied, -1 = unknown).
-granted or denied: Sets explicit consent values.
-Appends the consent flag (consent) to the destination URL.
-Send Pixel:
-
-Logs the final destination URL.
-Sends a pixel request to the Seznam.cz server using sendPixelFromBrowser.
-Completion:
-Calls data.gtmOnSuccess to signal successful tag execution.
-
-Destination URL Construction
 The final URL is constructed dynamically based on input values and the tag type. Example formats:
 
-Conversion:
-php
-Copy code
-https://c.seznam.cz/conv?id=<conversionId>&value=<conversionValue>&orderId=<conversionOrderId>&url=<pageReferrer>&consent=<consentValue>
-Retargeting:
-php
-Copy code
-https://c.seznam.cz/retargeting?id=<retargetingId>&itemId=<retargetingItemId>&pageType=<retargetingPageType>&url=<pageReferrer>&consent=<consentValue>
-Error Handling
-If any required input (e.g., conversionId or retargetingId) is missing, the script will not execute correctly, and debugging logs will indicate the issue.
-Consent state is handled gracefully, with a default value of -1 (unknown) if no valid consent signal is found.
-Debugging
-Use logToConsole messages to trace the script’s execution flow.
-Check the constructed URLs in the server logs for validation.
+### Conversion:
+```php
+https://c.seznam.cz/conv?id=&value=&orderId=&url=&consent=
+```
+
+### Retargeting:
+```php
+https://c.seznam.cz/retargeting?id=&itemId=&pageType=&url=&consent=
+```
+
+---
+
+## Error Handling
+
+- If any required input (e.g., `conversionId` or `retargetingId`) is missing, the script will not execute correctly, and debugging logs will indicate the issue.
+- Consent state is handled gracefully, with a default value of `-1` (unknown) if no valid consent signal is found.
+
+---
+
+## Debugging
+
+- Use `logToConsole` messages to trace the script’s execution flow.
+- Check the constructed URLs in the server logs for validation.
